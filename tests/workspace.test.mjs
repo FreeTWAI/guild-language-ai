@@ -21,3 +21,9 @@ test('HTML content is escaped and cannot install scripts or links', () => {
 test('unsupported contracts, arbitrary URLs, commands, private fields, and oversized content fail', () => {
   for (const value of [null, [], {...workspace, schema_version: 'v2'}, {...workspace, token: 'not-a-secret'}, {...workspace, guild_key: '../outside'}, {...workspace, repository: 'attacker/guild-x'}, {...workspace, purpose: 'a'.repeat(1201)}, {...workspace, steps: [{title: 'test', detail: 'test', action: 'https://example.com'}]}, {...workspace, steps: workspace.steps.map(step => ({...step, action: 'join'}))}]) assert.throws(() => validateWorkspace(value));
 });
+test('sourceSha parameter is strictly validated', async () => {
+  const {build} = await import('../scripts/build.mjs');
+  await assert.rejects(build(process.cwd(), 'invalid-sha-123</script><script>alert(1)</script>'), {message: 'Expected an exact source SHA'});
+  await assert.rejects(build(process.cwd(), 'a'.repeat(39)), {message: 'Expected an exact source SHA'});
+  await assert.rejects(build(process.cwd(), 'a'.repeat(41)), {message: 'Expected an exact source SHA'});
+});
